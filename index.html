@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca REDCap - Constructor de diccionarios</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { 
+            max-width: 1600px; 
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+        
+        .main-panel { min-width: 0; }
+        
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 { font-size: 28px; color: #1a202c; margin-bottom: 8px; }
+        .header p { color: #718096; font-size: 14px; }
+        
+        .info-banner {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        
+        .banner-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .banner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        
+        .banner-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .banner-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .banner-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .banner-text strong {
+            font-size: 13px;
+            color: #2d3748;
+            font-weight: 600;
+        }
+        
+        .banner-text span {
+            font-size: 11px;
+            color: #718096;
+            line-height: 1.3;
+        }
+        
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .btn-secondary:hover { background: #edf2f7; }
+        
+        .btn-danger {
+            background: #fc8181;
+            color: white;
+            border: 2px solid #f56565;
+        }
+        
+        .btn-danger:hover { 
+            background: #f56565;
+            transform: translateY(-2px);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .stat-label { font-size: 12px; color: #718096; margin-bottom: 8px; text-transform: uppercase; }
+        .stat-value { font-size: 28px; font-weight: 700; color: #667eea; }
+        
+        .search-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .search-controls { 
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .search-input, .select {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .search-input:focus, .select:focus { outline: none; border-color: #667eea; }
+        
+        .dictionary {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .dict-header {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dict-header:hover { opacity: 0.95; }
+        
+        .dict-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .dict-info {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        .badge {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-selected {
+            background: #667eea;
+        }
+        
+        .dict-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .dict-action-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .dict-action-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .dict-action-btn.delete {
+            background: rgba(252, 129, 129, 0.9);
+        }
+        
+        .dict-action-btn.delete:hover {
+            background: rgba(245, 101, 101, 1);
+        }
+        
+        .category {
+            background: #f7fafc;
+            border-radius: 8px;
+            margin: 16px 20px;
+            overflow: hidden;
+            border-left: 4px solid #667eea;
+        }
+        
+        .category.level-1 { margin-left: 40px; border-left-color: #805ad5; }
+        .category.level-2 { margin-left: 60px; border-left-color: #d69e2e; }
+        .category.level-3 { margin-left: 80px; border-left-color: #38b2ac; }
+        
+        .cat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .category.level-1 .cat-header { background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%); }
+        .category.level-2 .cat-header { background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%); }
+        .category.level-3 .cat-header { background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); }
+        
+        .cat-header:hover { opacity: 0.95; }
+        
+        .cat-header.drag-over {
+            background: #48bb78 !important;
+            box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.3);
+        }
+        
+        .cat-title {
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .cat-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .cat-action-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .cat-action-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .fields { 
+            padding: 12px 16px; 
+            min-height: 60px;
+            background: white;
+        }
+        
+        .fields.drag-over {
+            background: #f0fff4;
+            border: 2px dashed #48bb78;
+        }
+        
+        .field {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+            cursor: move;
+        }
+        
+        .field:hover { border-color: #667eea; }
+        .field.selected { border-color: #48bb78; background: #f0fff4; }
+        .field.dragging { opacity: 0.5; }
+        
+        .field-header { 
+            display: flex; 
+            gap: 12px; 
+            align-items: flex-start; 
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .field-name {
+            font-family: 'Courier New', monospace;
+            background: #edf2f7;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .field-type {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .drag-handle {
+            cursor: move;
+            color: #cbd5e0;
+            font-size: 18px;
+            line-height: 1;
+        }
+        
+        .drag-handle:hover {
+            color: #667eea;
+        }
+        
+        .field-label { 
+            font-size: 14px; 
+            color: #4a5568; 
+            line-height: 1.5;
+            flex: 1 1 100%;
+        }
+        
+        .field-options, .field-validation {
+            background: #f7fafc;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #718096;
+            margin-top: 8px;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        
+        .sidebar h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #1a202c;
+        }
+        
+        .sidebar-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-stat {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .sidebar-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .sidebar-stat-label {
+            font-size: 11px;
+            color: #718096;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        
+        .selected-list {
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .selected-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .selected-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .selected-item-name {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2d3748;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .selected-item-dict {
+            font-size: 10px;
+            color: #718096;
+            margin-top: 2px;
+        }
+        
+        .remove-btn {
+            background: #fed7d7;
+            color: #c53030;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .remove-btn:hover { background: #fc8181; color: white; }
+        
+        .export-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .export-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .export-input:focus { outline: none; border-color: #667eea; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.show { display: flex; }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .modal-title { font-size: 24px; font-weight: 700; }
+        
+        .close-btn {
+            background: #edf2f7;
+            color: #2d3748;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-input:focus, .form-textarea:focus { 
+            outline: none; 
+            border-color: #667eea; 
+        }
+        
+        .upload-zone {
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-zone:hover { border-color: #667eea; background: #f7fafc; }
+        .upload-zone.dragover { border-color: #667eea; background: #ebf8ff; }
+        
+        .info-box {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .success-box {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        
+        .error-box {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        
+        .hidden { display: none; }
+        
+        .empty { 
+            text-align: center; 
+            padding: 60px 20px; 
+            color: #718096;
+            background: white;
+            border-radius: 12px;
+        }
+        
+        .empty-icon { 
+            font-size: 64px; 
+            margin-bottom: 16px; 
+            opacity: 0.5; 
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .checkbox-wrapper label {
+            font-size: 14px;
+            color: #4a5568;
+            cursor: pointer;
+        }
+        
+        .category-tree {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f7fafc;
+        }
+        
+        .tree-item {
+            margin-bottom: 8px;
+        }
+        
+        .tree-node {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .tree-node.level-0 { border-left: 4px solid #667eea; }
+        .tree-node.level-1 { margin-left: 20px; border-left: 4px solid #805ad5; }
+        .tree-node.level-2 { margin-left: 40px; border-left: 4px solid #d69e2e; }
+        .tree-node.level-3 { margin-left: 60px; border-left: 4px solid #38b2ac; }
+        
+        .tree-node-info {
+            flex: 1;
+        }
+        
+        .tree-node-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .tree-node-count {
+            font-size: 11px;
+            color: #718096;
+            margin-top: 2px;
+        }
+        
+        .tree-node-actions {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .tree-btn {
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .tree-btn-add {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .tree-btn-add:hover {
+            background: #90cdf4;
+        }
+        
+        .tree-btn-edit {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .tree-btn-edit:hover {
+            background: #9ae6b4;
+        }
+        
+        .tree-btn-delete {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .tree-btn-delete:hover {
+            background: #fc8181;
+            color: white;
+        }
+        
+        .parent-selector {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            width: 100%;
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+                max-height: none;
+            }
+            
+            .search-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-panel">
+            <div class="header">
+                <h1>📚 Biblioteca REDCap - Constructor de diccionarios</h1>
+                <p>Importa, organiza con categorías jerárquicas y construye diccionarios personalizados</p>
+                
+                <div class="info-banner">
+                    <div class="banner-title">Funcionalidades principales</div>
+                    <div class="banner-grid">
+                        <div class="banner-item">
+                            <div class="banner-icon">📥</div>
+                            <div class="banner-text">
+                                <strong>Importar CSV</strong>
+                                <span>Carga múltiples diccionarios desde REDCap</span>
+                            </div>
+                        </div>
+                        <div class="banner-item">
+                            <div class="banner-icon">🌳</div>
+                            <div class="banner-text">
+                                <strong>Categorías jerárquicas</strong>
+                                <span>Crea estructura multinivel personalizada</span>
+                            </div>
+                        </div>
+                        <div class="banner-item">
+                            <div class="banner-icon">🖱️</div>
+                            <div class="banner-text">
+                                <strong>Arrastrar y soltar</strong>
+                                <span>Arrastra variables entre categorías</span>
+                            </div>
+                        </div>
+                        <div class="banner-item">
+                            <div class="banner-icon">✅</div>
+                            <div class="banner-text">
+                                <strong>Selección</strong>
+                                <span>Individual o masiva de variables</span>
+                            </div>
+                        </div>
+                        <div class="banner-item">
+                            <div class="banner-icon">🔍</div>
+                            <div class="banner-text">
+                                <strong>Búsqueda</strong>
+                                <span>Filtrado avanzado por tipo</span>
+                            </div>
+                        </div>
+                        <div class="banner-item">
+                            <div class="banner-icon">💾</div>
+                            <div class="banner-text">
+                                <strong>Exportar</strong>
+                                <span>CSV 100% compatible con REDCap</span>
+                            </div>
+                        </div>
+                        <div class="banner-item">
+                            <div class="banner-icon">🗑️</div>
+                            <div class="banner-text">
+                                <strong>Gestión</strong>
+                                <span>Elimina diccionarios individuales</span>
+                            </div>
+                        </div>
+                        <div class="banner-item">
+                            <div class="banner-icon">💼</div>
+                            <div class="banner-text">
+                                <strong>Guardado automático</strong>
+                                <span>Almacenamiento local automático</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions-bar">
+                    <button class="btn" id="btnImport">📥 Importar diccionario</button>
+                    <button class="btn-secondary btn" id="btnCategories">🌳 Constructor de categorías</button>
+                    <button class="btn-secondary btn" id="btnClear">🗑️ Limpiar selección</button>
+                    <button class="btn-secondary btn" id="btnSelectAll">✅ Seleccionar todo</button>
+                    <button class="btn-danger btn" id="btnClearAll">🗑️ Eliminar todo</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Diccionarios cargados</div>
+                    <div class="stat-value" id="statDicts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Variables totales</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Seleccionadas</div>
+                    <div class="stat-value" id="statSelected">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Categorías</div>
+                    <div class="stat-value" id="statCats">0</div>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <div class="search-controls">
+                    <input type="text" class="search-input" id="searchInput" placeholder="🔍 Buscar variables...">
+                    <select class="select" id="typeFilter">
+                        <option value="all">Todos los tipos</option>
+                    </select>
+                    <select class="select" id="categoryFilter">
+                        <option value="all">Todas las categorías</option>
+                        <option value="uncategorized">Sin categorizar</option>
+                    </select>
+                    <select class="select" id="dictFilter">
+                        <option value="all">Todos los diccionarios</option>
+                    </select>
+                    <button class="btn-secondary btn" id="btnClearFilters">Limpiar</button>
+                </div>
+            </div>
+
+            <div id="container">
+                <div class="empty">
+                    <div class="empty-icon">📋</div>
+                    <h3 style="margin-bottom:8px;">No hay diccionarios cargados</h3>
+                    <p>Importa uno o varios diccionarios CSV de REDCap para comenzar</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h2>🎯 Diccionario en construcción</h2>
+            
+            <div class="sidebar-stats">
+                <div class="sidebar-stat">
+                    <div class="sidebar-stat-value" id="sidebarSelected">0</div>
+                    <div class="sidebar-stat-label">Variables</div>
+                </div>
+                <div class="sidebar-stat">
+                    <div class="sidebar-stat-value" id="sidebarDicts">0</div>
+                    <div class="sidebar-stat-label">Diccionarios</div>
+                </div>
+            </div>
+
+            <div class="selected-list" id="selectedList">
+                <p style="color:#718096;font-size:13px;text-align:center;padding:20px;">No hay variables seleccionadas</p>
+            </div>
+
+            <div class="export-section">
+                <label class="form-label">Nombre del diccionario</label>
+                <input type="text" class="export-input" id="exportName" 
+                       placeholder="Mi diccionario REDCap" value="diccionario_personalizado">
+                <button class="btn" style="width:100%;" id="btnExport" disabled>
+                    💾 Exportar diccionario
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IMPORTAR -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📥 Importar diccionario REDCap</h2>
+                <button class="close-btn" id="closeImport">✕</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Nombre del diccionario (opcional)</label>
+                <input type="text" class="form-input" id="dictName" 
+                       placeholder="Ej: Estudio COVID-19">
+                <p style="font-size:12px;color:#718096;margin-top:8px;">Si no especificas un nombre, se usará el nombre del archivo</p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Opciones de importación</label>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="includeCalc" checked>
+                    <label for="includeCalc">Incluir campos calculados</label>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="includeDesc" checked>
+                    <label for="includeDesc">Incluir campos descriptivos</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Archivo CSV</label>
+                <input type="file" accept=".csv" id="fileInput" class="hidden">
+                <div class="upload-zone" id="uploadZone">
+                    <div style="font-size:48px;margin-bottom:12px;">📄</div>
+                    <div style="font-size:16px;font-weight:600;margin-bottom:8px;">
+                        Selecciona o arrastra un archivo CSV
+                    </div>
+                    <div style="font-size:14px;color:#718096;">
+                        Diccionario de datos exportado desde REDCap
+                    </div>
+                </div>
+            </div>
+            
+            <div id="uploadStatus"></div>
+        </div>
+    </div>
+
+    <!-- MODAL CONSTRUCTOR DE CATEGORÍAS -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🌳 Constructor de categorías</h2>
+                <button class="close-btn" id="closeCategory">✕</button>
+            </div>
+            
+            <div class="info-box" style="margin-top:0;">
+                <strong>💡 Sistema jerárquico</strong><br>
+                Crea categorías y subcategorías multinivel. Arrastra variables desde los diccionarios a las categorías para organizarlas.
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Crear nueva categoría</label>
+                <input type="text" class="form-input" id="newCatName" 
+                       placeholder="Nombre de la categoría">
+                <select class="parent-selector" id="parentSelector" style="margin-top:12px;">
+                    <option value="">📁 Categoría raíz (nivel superior)</option>
+                </select>
+                <textarea class="form-textarea" id="newCatDesc" 
+                          placeholder="Descripción (opcional)" style="margin-top:12px;"></textarea>
+                <button class="btn" style="margin-top:12px;width:100%;" id="btnCreateCat">
+                    ➕ Crear categoría
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Estructura de categorías</label>
+                <div id="categoryTree" class="category-tree">
+                    <p style="color:#718096;font-size:13px;text-align:center;padding:40px 20px;">
+                        No hay categorías creadas.<br>Crea tu primera categoría arriba.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR CATEGORÍA -->
+    <div class="modal" id="editCategoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">✏️ Editar categoría</h2>
+                <button class="close-btn" id="closeEditCategory">✕</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Nombre de la categoría</label>
+                <input type="text" class="form-input" id="editCatName">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Categoría padre</label>
+                <select class="parent-selector" id="editParentSelector">
+                    <option value="">📁 Categoría raíz (nivel superior)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-textarea" id="editCatDesc"></textarea>
+            </div>
+            
+            <button class="btn" style="width:100%;" id="btnSaveEdit">
+                💾 Guardar cambios
+            </button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+            
+            var state = {
+                dictionaries: [],
+                selected: {},
+                expandedDicts: {},
+                expandedCats: {},
+                categories: [],
+                editingCategory: null,
+                draggedVariable: null
+            };
+
+            function generateId() {
+                return 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            function processFile(file) {
+                if (!file) return;
+
+                var statusDiv = document.getElementById('uploadStatus');
+                statusDiv.innerHTML = '<div class="info-box">Procesando archivo...</div>';
+
+                var includeCalc = document.getElementById('includeCalc').checked;
+                var includeDesc = document.getElementById('includeDesc').checked;
+                var dictNameInput = document.getElementById('dictName').value.trim();
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        try {
+                            var rawData = results.data;
+                            
+                            var variables = rawData.filter(function(row) {
+                                var fieldName = (row['Variable / Field Name'] || '').trim();
+                                var fieldType = (row['Field Type'] || '').trim();
+                                
+                                if (!fieldName) return false;
+                                if (!includeCalc && fieldType === 'calc') return false;
+                                if (!includeDesc && fieldType === 'descriptive') return false;
+                                return true;
+                            });
+
+                            variables.forEach(function(v) {
+                                v._categoryId = null;
+                            });
+
+                            var dictName = dictNameInput || file.name.replace('.csv', '');
+                            var dictId = 'dict_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                            
+                            var newDict = {
+                                id: dictId,
+                                name: dictName,
+                                fileName: file.name,
+                                importDate: new Date().toISOString(),
+                                variables: variables,
+                                totalVars: variables.length
+                            };
+
+                            state.dictionaries.push(newDict);
+                            state.expandedDicts[dictId] = true;
+                            
+                            statusDiv.innerHTML = '<div class="success-box"><strong>✓ Diccionario "' + escapeHtml(dictName) + '" importado correctamente</strong><br>' + variables.length + ' variables cargadas</div>';
+                            
+                            setTimeout(function() {
+                                closeImportModal();
+                                render();
+                                saveToStorage();
+                            }, 1500);
+                            
+                        } catch (error) {
+                            statusDiv.innerHTML = '<div class="error-box"><strong>✗ Error al procesar el archivo</strong><br>' + error.message + '</div>';
+                        }
+                    }
+                });
+            }
+
+            function toggleVariable(dictId, index) {
+                var key = dictId + '|||' + index;
+                if (state.selected[key]) {
+                    delete state.selected[key];
+                } else {
+                    state.selected[key] = true;
+                }
+                render();
+                saveToStorage();
+            }
+
+            function selectAll() {
+                state.dictionaries.forEach(function(dict) {
+                    dict.variables.forEach(function(v, index) {
+                        var key = dict.id + '|||' + index;
+                        state.selected[key] = true;
+                    });
+                });
+                render();
+                saveToStorage();
+            }
+
+            function clearSelection() {
+                var selectedKeys = Object.keys(state.selected);
+                
+                if (selectedKeys.length === 0) {
+                    alert('ℹ️ No hay variables seleccionadas para limpiar.');
+                    return;
+                }
+                
+                var count = selectedKeys.length;
+                if (confirm('¿Deseas limpiar toda la selección?\n\n' + count + ' variables serán deseleccionadas.')) {
+                    state.selected = {};
+                    saveToStorage();
+                    render();
+                }
+            }
+
+            function clearAllData() {
+                if (state.dictionaries.length === 0 && state.categories.length === 0) {
+                    alert('ℹ️ No hay datos para eliminar.');
+                    return;
+                }
+                
+                var totalVars = 0;
+                state.dictionaries.forEach(function(d) { totalVars += d.totalVars; });
+                
+                var message = '⚠️ ADVERTENCIA: Esta acción eliminará TODOS los datos:\n\n' +
+                              '📚 ' + state.dictionaries.length + ' diccionarios\n' +
+                              '📊 ' + totalVars + ' variables\n' +
+                              '🌳 ' + state.categories.length + ' categorías\n' +
+                              '✅ ' + Object.keys(state.selected).length + ' selecciones\n\n' +
+                              '¿Estás seguro de que deseas continuar?\n\n' +
+                              'Esta acción NO se puede deshacer.';
+                
+                if (confirm(message)) {
+                    if (confirm('¿Estás REALMENTE seguro? Esta es tu última oportunidad para cancelar.')) {
+                        state.dictionaries = [];
+                        state.selected = {};
+                        state.expandedDicts = {};
+                        state.expandedCats = {};
+                        state.categories = [];
+                        saveToStorage();
+                        render();
+                        alert('✓ Todos los datos han sido eliminados correctamente.');
+                    }
+                }
+            }
+
+            function deleteDictionary(dictId) {
+                var dict = state.dictionaries.find(function(d) { return d.id === dictId; });
+                if (!dict) return;
+                
+                if (confirm('¿Deseas eliminar el diccionario "' + dict.name + '"?\n\n' +
+                           'Se eliminarán ' + dict.totalVars + ' variables.')) {
+                    
+                    state.dictionaries = state.dictionaries.filter(function(d) { return d.id !== dictId; });
+                    
+                    var newSelected = {};
+                    for (var key in state.selected) {
+                        if (!key.startsWith(dictId + '|||')) {
+                            newSelected[key] = state.selected[key];
+                        }
+                    }
+                    state.selected = newSelected;
+                    
+                    delete state.expandedDicts[dictId];
+                    
+                    saveToStorage();
+                    render();
+                }
+            }
+
+            function createCategory() {
+                var name = document.getElementById('newCatName').value.trim();
+                var parentId = document.getElementById('parentSelector').value || null;
+                var description = document.getElementById('newCatDesc').value.trim();
+
+                if (!name) {
+                    alert('Por favor, introduce un nombre para la categoría');
+                    return;
+                }
+
+                var newCat = {
+                    id: generateId(),
+                    name: name,
+                    parentId: parentId,
+                    description: description,
+                    children: []
+                };
+
+                state.categories.push(newCat);
+
+                document.getElementById('newCatName').value = '';
+                document.getElementById('newCatDesc').value = '';
+                document.getElementById('parentSelector').value = '';
+
+                saveToStorage();
+                renderCategoryTree();
+                updateParentSelectors();
+                render();
+            }
+
+            function deleteCategory(catId) {
+                var cat = findCategoryById(catId);
+                if (!cat) return;
+
+                var hasVariables = false;
+                state.dictionaries.forEach(function(dict) {
+                    dict.variables.forEach(function(v) {
+                        if (v._categoryId === catId) hasVariables = true;
+                    });
+                });
+
+                var message = '¿Deseas eliminar la categoría "' + cat.name + '"?';
+                if (hasVariables) {
+                    message += '\n\nLas variables asignadas a esta categoría quedarán sin categorizar.';
+                }
+
+                var children = getCategoryChildren(catId);
+                if (children.length > 0) {
+                    message += '\n\nTambién se eliminarán ' + children.length + ' subcategorías.';
+                }
+
+                if (!confirm(message)) return;
+
+                var toDelete = [catId].concat(children.map(function(c) { return c.id; }));
+                state.categories = state.categories.filter(function(c) { 
+                    return toDelete.indexOf(c.id) === -1; 
+                });
+
+                state.dictionaries.forEach(function(dict) {
+                    dict.variables.forEach(function(v) {
+                        if (toDelete.indexOf(v._categoryId) !== -1) {
+                            v._categoryId = null;
+                        }
+                    });
+                });
+
+                saveToStorage();
+                renderCategoryTree();
+                updateParentSelectors();
+                render();
+            }
+
+            function openEditCategory(catId) {
+                var cat = findCategoryById(catId);
+                if (!cat) return;
+
+                state.editingCategory = catId;
+                
+                document.getElementById('editCatName').value = cat.name;
+                document.getElementById('editCatDesc').value = cat.description || '';
+                
+                updateParentSelectors();
+                document.getElementById('editParentSelector').value = cat.parentId || '';
+
+                document.getElementById('editCategoryModal').classList.add('show');
+            }
+
+            function closeEditCategoryModal() {
+                document.getElementById('editCategoryModal').classList.remove('show');
+                state.editingCategory = null;
+            }
+
+            function saveEditCategory() {
+                if (!state.editingCategory) return;
+
+                var cat = findCategoryById(state.editingCategory);
+                if (!cat) return;
+
+                var newName = document.getElementById('editCatName').value.trim();
+                var newParentId = document.getElementById('editParentSelector').value || null;
+                var newDesc = document.getElementById('editCatDesc').value.trim();
+
+                if (!newName) {
+                    alert('Por favor, introduce un nombre para la categoría');
+                    return;
+                }
+
+                if (newParentId) {
+                    var children = getCategoryChildren(cat.id);
+                    var childIds = children.map(function(c) { return c.id; });
+                    if (newParentId === cat.id || childIds.indexOf(newParentId) !== -1) {
+                        alert('No puedes hacer que una categoría sea hija de sí misma o de sus propias subcategorías.');
+                        return;
+                    }
+                }
+
+                cat.name = newName;
+                cat.parentId = newParentId;
+                cat.description = newDesc;
+
+                closeEditCategoryModal();
+                saveToStorage();
+                renderCategoryTree();
+                updateParentSelectors();
+                render();
+            }
+
+            function findCategoryById(catId) {
+                return state.categories.find(function(c) { return c.id === catId; });
+            }
+
+            function getCategoryChildren(catId) {
+                var children = state.categories.filter(function(c) { return c.parentId === catId; });
+                var allChildren = [].concat(children);
+                
+                children.forEach(function(child) {
+                    allChildren = allChildren.concat(getCategoryChildren(child.id));
+                });
+                
+                return allChildren;
+            }
+
+            function getCategoryLevel(catId) {
+                var level = 0;
+                var cat = findCategoryById(catId);
+                
+                while (cat && cat.parentId) {
+                    level++;
+                    cat = findCategoryById(cat.parentId);
+                }
+                
+                return level;
+            }
+
+            function countVariablesInCategory(catId) {
+                var count = 0;
+                var children = getCategoryChildren(catId);
+                var catIds = [catId].concat(children.map(function(c) { return c.id; }));
+                
+                state.dictionaries.forEach(function(dict) {
+                    dict.variables.forEach(function(v) {
+                        if (catIds.indexOf(v._categoryId) !== -1) {
+                            count++;
+                        }
+                    });
+                });
+                
+                return count;
+            }
+
+            function renderCategoryTree() {
+                var tree = document.getElementById('categoryTree');
+                
+                if (state.categories.length === 0) {
+                    tree.innerHTML = '<p style="color:#718096;font-size:13px;text-align:center;padding:40px 20px;">No hay categorías creadas.<br>Crea tu primera categoría arriba.</p>';
+                    return;
+                }
+
+                var rootCategories = state.categories.filter(function(c) { return !c.parentId; });
+                
+                function renderCategory(cat, level) {
+                    var varCount = countVariablesInCategory(cat.id);
+                    var children = state.categories.filter(function(c) { return c.parentId === cat.id; });
+                    
+                    var html = '<div class="tree-item">';
+                    html += '<div class="tree-node level-' + level + '">';
+                    html += '<div class="tree-node-info">';
+                    html += '<div class="tree-node-name">' + escapeHtml(cat.name) + '</div>';
+                    html += '<div class="tree-node-count">' + varCount + ' variables';
+                    if (children.length > 0) {
+                        html += ' • ' + children.length + ' subcategorías';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div class="tree-node-actions">';
+                    html += '<button class="tree-btn tree-btn-add" data-add-child="' + cat.id + '">+ Sub</button>';
+                    html += '<button class="tree-btn tree-btn-edit" data-edit-cat="' + cat.id + '">Editar</button>';
+                    html += '<button class="tree-btn tree-btn-delete" data-delete-cat="' + cat.id + '">Eliminar</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    children.forEach(function(child) {
+                        html += renderCategory(child, level + 1);
+                    });
+                    
+                    html += '</div>';
+                    return html;
+                }
+
+                tree.innerHTML = rootCategories.map(function(cat) {
+                    return renderCategory(cat, 0);
+                }).join('');
+
+                var editBtns = tree.querySelectorAll('[data-edit-cat]');
+                for (var i = 0; i < editBtns.length; i++) {
+                    editBtns[i].addEventListener('click', function() {
+                        openEditCategory(this.getAttribute('data-edit-cat'));
+                    });
+                }
+
+                var deleteBtns = tree.querySelectorAll('[data-delete-cat]');
+                for (var i = 0; i < deleteBtns.length; i++) {
+                    deleteBtns[i].addEventListener('click', function() {
+                        deleteCategory(this.getAttribute('data-delete-cat'));
+                    });
+                }
+
+                var addChildBtns = tree.querySelectorAll('[data-add-child]');
+                for (var i = 0; i < addChildBtns.length; i++) {
+                    addChildBtns[i].addEventListener('click', function() {
+                        var parentId = this.getAttribute('data-add-child');
+                        document.getElementById('parentSelector').value = parentId;
+                        document.getElementById('newCatName').focus();
+                    });
+                }
+            }
+
+            function updateParentSelectors() {
+                var selectors = [
+                    document.getElementById('parentSelector'),
+                    document.getElementById('editParentSelector')
+                ];
+
+                selectors.forEach(function(selector) {
+                    if (!selector) return;
+
+                    var currentValue = selector.value;
+                    var editingId = state.editingCategory;
+
+                    var html = '<option value="">📁 Categoría raíz (nivel superior)</option>';
+
+                    function addOptions(categories, level) {
+                        categories.forEach(function(cat) {
+                            if (editingId) {
+                                if (cat.id === editingId) return;
+                                var children = getCategoryChildren(editingId);
+                                if (children.some(function(c) { return c.id === cat.id; })) return;
+                            }
+
+                            var indent = '　'.repeat(level);
+                            var prefix = level === 0 ? '📁' : (level === 1 ? '📂' : (level === 2 ? '📄' : '└─'));
+                            html += '<option value="' + cat.id + '">' + indent + prefix + ' ' + escapeHtml(cat.name) + '</option>';
+                            
+                            var children = state.categories.filter(function(c) { return c.parentId === cat.id; });
+                            if (children.length > 0) {
+                                addOptions(children, level + 1);
+                            }
+                        });
+                    }
+
+                    var rootCategories = state.categories.filter(function(c) { return !c.parentId; });
+                    addOptions(rootCategories, 0);
+
+                    selector.innerHTML = html;
+                    selector.value = currentValue;
+                });
+            }
+
+            function moveVariableToCategory(dictId, varIndex, categoryId) {
+                var dict = state.dictionaries.find(function(d) { return d.id === dictId; });
+                if (dict && dict.variables[varIndex]) {
+                    dict.variables[varIndex]._categoryId = categoryId;
+                    saveToStorage();
+                    render();
+                }
+            }
+
+            function setupEventListeners() {
+                document.getElementById('btnImport').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openImportModal();
+                });
+                
+                document.getElementById('closeImport').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeImportModal();
+                });
+                
+                document.getElementById('btnCategories').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openCategoryModal();
+                });
+                
+                document.getElementById('closeCategory').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeCategoryModal();
+                });
+                
+                document.getElementById('btnClear').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    clearSelection();
+                });
+                
+                document.getElementById('btnSelectAll').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    selectAll();
+                });
+                
+                document.getElementById('btnClearAll').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    clearAllData();
+                });
+                
+                document.getElementById('btnClearFilters').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    clearFilters();
+                });
+                
+                document.getElementById('btnExport').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    exportDictionary();
+                });
+                
+                document.getElementById('btnCreateCat').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    createCategory();
+                });
+                
+                document.getElementById('closeEditCategory').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeEditCategoryModal();
+                });
+                
+                document.getElementById('btnSaveEdit').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    saveEditCategory();
+                });
+                
+                document.getElementById('searchInput').addEventListener('input', render);
+                document.getElementById('typeFilter').addEventListener('change', render);
+                document.getElementById('categoryFilter').addEventListener('change', render);
+                document.getElementById('dictFilter').addEventListener('change', render);
+
+                var uploadZone = document.getElementById('uploadZone');
+                var fileInput = document.getElementById('fileInput');
+
+                uploadZone.addEventListener('click', function() {
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', function(e) {
+                    if (e.target.files.length > 0) {
+                        processFile(e.target.files[0]);
+                    }
+                });
+
+                uploadZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    uploadZone.classList.add('dragover');
+                });
+
+                uploadZone.addEventListener('dragleave', function() {
+                    uploadZone.classList.remove('dragover');
+                });
+
+                uploadZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    uploadZone.classList.remove('dragover');
+                    
+                    if (e.dataTransfer.files.length > 0) {
+                        fileInput.files = e.dataTransfer.files;
+                        processFile(e.dataTransfer.files[0]);
+                    }
+                });
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' || e.keyCode === 27) {
+                        closeImportModal();
+                        closeCategoryModal();
+                        closeEditCategoryModal();
+                    }
+                });
+            }
+
+            function removeFromSelection(key) {
+                delete state.selected[key];
+                render();
+                saveToStorage();
+            }
+
+            function getFilteredDictionaries() {
+                var search = document.getElementById('searchInput').value.toLowerCase();
+                var typeFilter = document.getElementById('typeFilter').value;
+                var categoryFilter = document.getElementById('categoryFilter').value;
+                var dictFilter = document.getElementById('dictFilter').value;
+
+                return state.dictionaries.filter(function(dict) {
+                    if (dictFilter !== 'all' && dict.id !== dictFilter) return false;
+                    
+                    if (search || typeFilter !== 'all' || categoryFilter !== 'all') {
+                        var hasMatch = dict.variables.some(function(v) {
+                            var matchSearch = !search || 
+                                (v['Variable / Field Name'] || '').toLowerCase().indexOf(search) !== -1 || 
+                                (v['Field Label'] || '').toLowerCase().indexOf(search) !== -1;
+                            
+                            var matchType = typeFilter === 'all' || (v['Field Type'] || '') === typeFilter;
+                            
+                            var matchCategory = categoryFilter === 'all' || 
+                                (categoryFilter === 'uncategorized' && !v._categoryId) ||
+                                (v._categoryId === categoryFilter);
+
+                            return matchSearch && matchType && matchCategory;
+                        });
+                        
+                        return hasMatch;
+                    }
+                    
+                    return true;
+                });
+            }
+
+            function groupVariablesByCategory(dict) {
+                var search = document.getElementById('searchInput').value.toLowerCase();
+                var typeFilter = document.getElementById('typeFilter').value;
+                var categoryFilter = document.getElementById('categoryFilter').value;
+                
+                var grouped = {};
+                
+                state.categories.forEach(function(cat) {
+                    grouped[cat.id] = [];
+                });
+                grouped['uncategorized'] = [];
+
+                dict.variables.forEach(function(v, index) {
+                    // Aplicar filtros
+                    var matchSearch = !search || 
+                        (v['Variable / Field Name'] || '').toLowerCase().indexOf(search) !== -1 || 
+                        (v['Field Label'] || '').toLowerCase().indexOf(search) !== -1;
+                    
+                    var matchType = typeFilter === 'all' || (v['Field Type'] || '') === typeFilter;
+                    
+                    var matchCategory = categoryFilter === 'all' || 
+                        (categoryFilter === 'uncategorized' && !v._categoryId) ||
+                        (v._categoryId === categoryFilter);
+                    
+                    // Solo incluir si pasa todos los filtros
+                    if (matchSearch && matchType && matchCategory) {
+                        var item = { data: v, index: index };
+                        if (v._categoryId && grouped[v._categoryId]) {
+                            grouped[v._categoryId].push(item);
+                        } else {
+                            grouped['uncategorized'].push(item);
+                        }
+                    }
+                });
+
+                return grouped;
+            }
+
+            function toggleDictionary(dictId) {
+                state.expandedDicts[dictId] = !state.expandedDicts[dictId];
+                render();
+            }
+
+            function toggleCategory(dictId, catId) {
+                var key = dictId + '|||' + catId;
+                state.expandedCats[key] = !state.expandedCats[key];
+                render();
+            }
+
+            function selectDictionary(dictId) {
+                var dict = state.dictionaries.find(function(d) { return d.id === dictId; });
+                if (!dict) return;
+                
+                dict.variables.forEach(function(v, index) {
+                    var key = dictId + '|||' + index;
+                    state.selected[key] = true;
+                });
+                render();
+                saveToStorage();
+            }
+
+            function selectCategory(dictId, catId) {
+                var dict = state.dictionaries.find(function(d) { return d.id === dictId; });
+                if (!dict) return;
+                
+                dict.variables.forEach(function(v, index) {
+                    if (v._categoryId === catId) {
+                        var key = dictId + '|||' + index;
+                        state.selected[key] = true;
+                    }
+                });
+                render();
+                saveToStorage();
+            }
+
+            function escapeHtml(text) {
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+
+            function render() {
+                var container = document.getElementById('container');
+                var filteredDicts = getFilteredDictionaries();
+
+                var totalVars = 0;
+                state.dictionaries.forEach(function(d) { totalVars += d.totalVars; });
+                
+                var selectedCount = Object.keys(state.selected).length;
+
+                document.getElementById('statDicts').textContent = state.dictionaries.length;
+                document.getElementById('statTotal').textContent = totalVars;
+                document.getElementById('statSelected').textContent = selectedCount;
+                document.getElementById('statCats').textContent = state.categories.length;
+
+                document.getElementById('sidebarSelected').textContent = selectedCount;
+                
+                var selectedDictsObj = {};
+                for (var key in state.selected) {
+                    var dictId = key.split('|||')[0];
+                    selectedDictsObj[dictId] = true;
+                }
+                document.getElementById('sidebarDicts').textContent = Object.keys(selectedDictsObj).length;
+
+                document.getElementById('btnExport').disabled = selectedCount === 0;
+
+                var typeSelect = document.getElementById('typeFilter');
+                var typesObj = {};
+                state.dictionaries.forEach(function(dict) {
+                    dict.variables.forEach(function(v) { 
+                        var type = v['Field Type'] || '';
+                        if (type) typesObj[type] = true; 
+                    });
+                });
+                var types = Object.keys(typesObj).sort();
+                var currentType = typeSelect.value;
+                typeSelect.innerHTML = '<option value="all">Todos los tipos</option>' +
+                    types.map(function(t) { return '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>'; }).join('');
+                typeSelect.value = currentType;
+
+                var dictSelect = document.getElementById('dictFilter');
+                var currentDict = dictSelect.value;
+                dictSelect.innerHTML = '<option value="all">Todos los diccionarios</option>' +
+                    state.dictionaries.map(function(d) { 
+                        return '<option value="' + d.id + '">' + escapeHtml(d.name) + '</option>'; 
+                    }).join('');
+                dictSelect.value = currentDict;
+
+                // Actualizar filtro de categorías
+                var categorySelect = document.getElementById('categoryFilter');
+                var currentCategory = categorySelect.value;
+                var categoryOptions = '<option value="all">Todas las categorías</option>';
+                categoryOptions += '<option value="uncategorized">Sin categorizar</option>';
+                
+                function addCategoryOptions(categories, level) {
+                    categories.forEach(function(cat) {
+                        var indent = '　'.repeat(level);
+                        var prefix = level === 0 ? '📁' : (level === 1 ? '📂' : (level === 2 ? '📄' : '└─'));
+                        categoryOptions += '<option value="' + cat.id + '">' + indent + prefix + ' ' + escapeHtml(cat.name) + '</option>';
+                        
+                        var children = state.categories.filter(function(c) { return c.parentId === cat.id; });
+                        if (children.length > 0) {
+                            addCategoryOptions(children, level + 1);
+                        }
+                    });
+                }
+                
+                var rootCategories = state.categories.filter(function(c) { return !c.parentId; });
+                addCategoryOptions(rootCategories, 0);
+                
+                categorySelect.innerHTML = categoryOptions;
+                categorySelect.value = currentCategory;
+
+                if (filteredDicts.length === 0) {
+                    if (state.dictionaries.length === 0) {
+                        container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><h3 style="margin-bottom:8px;">No hay diccionarios cargados</h3><p>Importa uno o varios diccionarios CSV de REDCap para comenzar</p></div>';
+                    } else {
+                        container.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>No se encontraron diccionarios que coincidan con los filtros</p></div>';
+                    }
+                    renderSelectedList();
+                    return;
+                }
+
+                container.innerHTML = filteredDicts.map(function(dict) {
+                    var isExpanded = state.expandedDicts[dict.id] !== false;
+                    var grouped = groupVariablesByCategory(dict);
+                    
+                    // Contar variables filtradas
+                    var filteredCount = 0;
+                    var selectedInFiltered = 0;
+                    for (var catId in grouped) {
+                        filteredCount += grouped[catId].length;
+                        grouped[catId].forEach(function(item) {
+                            var key = dict.id + '|||' + item.index;
+                            if (state.selected[key]) selectedInFiltered++;
+                        });
+                    }
+
+                    return '<div class="dictionary">' +
+                        '<div class="dict-header" data-dict="' + dict.id + '">' +
+                        '<div>' +
+                        '<div class="dict-title">' +
+                        '<span>' + (isExpanded ? '▼' : '▶') + '</span>' +
+                        '<span>📚 ' + escapeHtml(dict.name) + '</span>' +
+                        '<span class="badge">' + filteredCount + ' variables</span>' +
+                        (selectedInFiltered > 0 ? '<span class="badge badge-selected">' + selectedInFiltered + ' seleccionadas</span>' : '') +
+                        '</div>' +
+                        '<div class="dict-info">Importado: ' + new Date(dict.importDate).toLocaleDateString('es-ES') + ' • Archivo: ' + escapeHtml(dict.fileName) + '</div>' +
+                        '</div>' +
+                        '<div class="dict-actions">' +
+                        '<button class="dict-action-btn" data-select-dict="' + dict.id + '">Seleccionar todas</button>' +
+                        '<button class="dict-action-btn delete" data-delete-dict="' + dict.id + '">Eliminar</button>' +
+                        '</div>' +
+                        '</div>' +
+                        (isExpanded ? renderDictionaryContent(dict, grouped) : '') +
+                        '</div>';
+                }).join('');
+
+                var dictHeaders = container.querySelectorAll('.dict-header');
+                for (var i = 0; i < dictHeaders.length; i++) {
+                    (function(elem) {
+                        var clickableArea = elem.querySelector('.dict-title').parentElement;
+                        clickableArea.addEventListener('click', function() {
+                            toggleDictionary(elem.getAttribute('data-dict'));
+                        });
+                    })(dictHeaders[i]);
+                }
+
+                var selectDictBtns = container.querySelectorAll('[data-select-dict]');
+                for (var i = 0; i < selectDictBtns.length; i++) {
+                    (function(elem) {
+                        elem.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            selectDictionary(elem.getAttribute('data-select-dict'));
+                        });
+                    })(selectDictBtns[i]);
+                }
+
+                var deleteDictBtns = container.querySelectorAll('[data-delete-dict]');
+                for (var i = 0; i < deleteDictBtns.length; i++) {
+                    (function(elem) {
+                        elem.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            deleteDictionary(elem.getAttribute('data-delete-dict'));
+                        });
+                    })(deleteDictBtns[i]);
+                }
+
+                var catHeaders = container.querySelectorAll('.cat-header');
+                for (var i = 0; i < catHeaders.length; i++) {
+                    (function(elem) {
+                        var title = elem.querySelector('.cat-title');
+                        title.addEventListener('click', function() {
+                            var parts = elem.getAttribute('data-cat').split('|||');
+                            toggleCategory(parts[0], parts[1]);
+                        });
+                        
+                        elem.addEventListener('dragover', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            elem.classList.add('drag-over');
+                        });
+                        
+                        elem.addEventListener('dragleave', function(e) {
+                            e.stopPropagation();
+                            elem.classList.remove('drag-over');
+                        });
+                        
+                        elem.addEventListener('drop', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            elem.classList.remove('drag-over');
+                            
+                            if (state.draggedVariable) {
+                                var parts = elem.getAttribute('data-cat').split('|||');
+                                var catId = parts[1];
+                                moveVariableToCategory(
+                                    state.draggedVariable.dictId,
+                                    state.draggedVariable.index,
+                                    catId
+                                );
+                                state.draggedVariable = null;
+                            }
+                        });
+                    })(catHeaders[i]);
+                }
+
+                var selectCatBtns = container.querySelectorAll('[data-select-cat]');
+                for (var i = 0; i < selectCatBtns.length; i++) {
+                    (function(elem) {
+                        elem.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var parts = elem.getAttribute('data-select-cat').split('|||');
+                            selectCategory(parts[0], parts[1]);
+                        });
+                    })(selectCatBtns[i]);
+                }
+
+                var fieldsContainers = container.querySelectorAll('.fields');
+                for (var i = 0; i < fieldsContainers.length; i++) {
+                    (function(elem) {
+                        elem.addEventListener('dragover', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            elem.classList.add('drag-over');
+                        });
+                        
+                        elem.addEventListener('dragleave', function(e) {
+                            e.stopPropagation();
+                            elem.classList.remove('drag-over');
+                        });
+                        
+                        elem.addEventListener('drop', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            elem.classList.remove('drag-over');
+                            
+                            if (state.draggedVariable) {
+                                var catId = elem.getAttribute('data-cat-id');
+                                moveVariableToCategory(
+                                    state.draggedVariable.dictId,
+                                    state.draggedVariable.index,
+                                    catId === 'uncategorized' ? null : catId
+                                );
+                                state.draggedVariable = null;
+                            }
+                        });
+                    })(fieldsContainers[i]);
+                }
+
+                var fieldDivs = container.querySelectorAll('.field');
+                for (var i = 0; i < fieldDivs.length; i++) {
+                    (function(elem) {
+                        elem.addEventListener('click', function(e) {
+                            if (e.target.classList.contains('checkbox') || e.target.classList.contains('drag-handle')) {
+                                return;
+                            }
+                            var parts = elem.getAttribute('data-var').split('|||');
+                            toggleVariable(parts[0], parseInt(parts[1]));
+                        });
+                        
+                        elem.setAttribute('draggable', 'true');
+                        
+                        elem.addEventListener('dragstart', function(e) {
+                            var parts = elem.getAttribute('data-var').split('|||');
+                            state.draggedVariable = {
+                                dictId: parts[0],
+                                index: parseInt(parts[1])
+                            };
+                            elem.classList.add('dragging');
+                        });
+                        
+                        elem.addEventListener('dragend', function(e) {
+                            elem.classList.remove('dragging');
+                        });
+                    })(fieldDivs[i]);
+                }
+
+                var checkboxes = container.querySelectorAll('.checkbox');
+                for (var i = 0; i < checkboxes.length; i++) {
+                    (function(elem) {
+                        elem.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var parts = elem.getAttribute('data-var').split('|||');
+                            toggleVariable(parts[0], parseInt(parts[1]));
+                        });
+                    })(checkboxes[i]);
+                }
+
+                renderSelectedList();
+            }
+
+            function renderDictionaryContent(dict, grouped) {
+                var html = '';
+                
+                function renderCategoryGroup(catId, level) {
+                    var cat = findCategoryById(catId);
+                    if (!cat) return '';
+                    
+                    var items = grouped[catId] || [];
+                    var selectedInCat = 0;
+                    items.forEach(function(item) {
+                        var key = dict.id + '|||' + item.index;
+                        if (state.selected[key]) selectedInCat++;
+                    });
+                    
+                    var catKey = dict.id + '|||' + catId;
+                    var isExpanded = state.expandedCats[catKey] !== false;
+
+                    var result = '<div class="category level-' + level + '">' +
+                        '<div class="cat-header" data-cat="' + dict.id + '|||' + catId + '">' +
+                        '<div class="cat-title">' +
+                        '<span>' + (isExpanded ? '▼' : '▶') + '</span>' +
+                        '<span>' + escapeHtml(cat.name) + '</span>' +
+                        '<span class="badge">' + items.length + '</span>' +
+                        (selectedInCat > 0 ? '<span class="badge badge-selected">' + selectedInCat + ' seleccionadas</span>' : '') +
+                        '</div>' +
+                        '<div class="cat-actions">' +
+                        '<button class="cat-action-btn" data-select-cat="' + dict.id + '|||' + catId + '">Seleccionar todas</button>' +
+                        '</div>' +
+                        '</div>';
+                    
+                    if (isExpanded) {
+                        result += '<div class="fields" data-cat-id="' + catId + '">';
+                        if (items.length > 0) {
+                            result += items.map(function(item) { return renderField(dict.id, item); }).join('');
+                        } else {
+                            result += '<p style="color:#718096;font-size:12px;text-align:center;padding:20px;">Sin variables. Arrastra variables aquí.</p>';
+                        }
+                        result += '</div>';
+                    }
+                    
+                    result += '</div>';
+                    return result;
+                }
+
+                var rootCategories = state.categories.filter(function(c) { return !c.parentId; });
+                
+                function renderCategoryTree(categories, level) {
+                    categories.forEach(function(cat) {
+                        html += renderCategoryGroup(cat.id, level);
+                        var children = state.categories.filter(function(c) { return c.parentId === cat.id; });
+                        if (children.length > 0) {
+                            renderCategoryTree(children, level + 1);
+                        }
+                    });
+                }
+                
+                renderCategoryTree(rootCategories, 0);
+                
+                var uncatItems = grouped['uncategorized'] || [];
+                if (uncatItems.length > 0) {
+                    var selectedInUncat = 0;
+                    uncatItems.forEach(function(item) {
+                        var key = dict.id + '|||' + item.index;
+                        if (state.selected[key]) selectedInUncat++;
+                    });
+                    
+                    var uncatKey = dict.id + '|||uncategorized';
+                    var isExpanded = state.expandedCats[uncatKey] !== false;
+                    
+                    html += '<div class="category">' +
+                        '<div class="cat-header" data-cat="' + dict.id + '|||uncategorized">' +
+                        '<div class="cat-title">' +
+                        '<span>' + (isExpanded ? '▼' : '▶') + '</span>' +
+                        '<span>📦 Sin categorizar</span>' +
+                        '<span class="badge">' + uncatItems.length + '</span>' +
+                        (selectedInUncat > 0 ? '<span class="badge badge-selected">' + selectedInUncat + ' seleccionadas</span>' : '') +
+                        '</div>' +
+                        '</div>';
+                    
+                    if (isExpanded) {
+                        html += '<div class="fields" data-cat-id="uncategorized">' +
+                            uncatItems.map(function(item) { return renderField(dict.id, item); }).join('') +
+                            '</div>';
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                return html;
+            }
+
+            function renderField(dictId, item) {
+                var v = item.data;
+                var index = item.index;
+                var key = dictId + '|||' + index;
+                var isSelected = state.selected[key];
+                
+                var fieldName = v['Variable / Field Name'] || '';
+                var fieldType = v['Field Type'] || '';
+                var fieldLabel = v['Field Label'] || '';
+                var choices = v['Choices, Calculations, OR Slider Labels'] || '';
+                var validation = v['Text Validation Type OR Show Slider Number'] || '';
+                
+                return '<div class="field ' + (isSelected ? 'selected' : '') + '" data-var="' + dictId + '|||' + index + '" draggable="true">' +
+                    '<div class="field-header">' +
+                    '<span class="drag-handle">⋮⋮</span>' +
+                    '<input type="checkbox" class="checkbox" ' + (isSelected ? 'checked' : '') + ' data-var="' + dictId + '|||' + index + '">' +
+                    '<span class="field-name">' + escapeHtml(fieldName) + '</span>' +
+                    '<span class="field-type">' + escapeHtml(fieldType) + '</span>' +
+                    '</div>' +
+                    '<div class="field-label">' + escapeHtml(fieldLabel) + '</div>' +
+                    (choices ? '<div class="field-options"><strong>Opciones:</strong> ' + escapeHtml(choices) + '</div>' : '') +
+                    (validation ? '<div class="field-validation"><strong>Validación:</strong> ' + escapeHtml(validation) + '</div>' : '') +
+                    '</div>';
+            }
+
+            function renderSelectedList() {
+                var list = document.getElementById('selectedList');
+                var selectedItems = [];
+                
+                for (var key in state.selected) {
+                    var parts = key.split('|||');
+                    var dictId = parts[0];
+                    var index = parseInt(parts[1]);
+                    
+                    var dict = state.dictionaries.find(function(d) { return d.id === dictId; });
+                    if (dict && dict.variables[index]) {
+                        selectedItems.push({
+                            key: key,
+                            dictName: dict.name,
+                            varName: dict.variables[index]['Variable / Field Name'] || ''
+                        });
+                    }
+                }
+
+                if (selectedItems.length === 0) {
+                    list.innerHTML = '<p style="color:#718096;font-size:13px;text-align:center;padding:20px;">No hay variables seleccionadas</p>';
+                    return;
+                }
+
+                list.innerHTML = selectedItems.map(function(item) {
+                    return '<div class="selected-item">' +
+                        '<div class="selected-item-info">' +
+                        '<div class="selected-item-name">' + escapeHtml(item.varName) + '</div>' +
+                        '<div class="selected-item-dict">' + escapeHtml(item.dictName) + '</div>' +
+                        '</div>' +
+                        '<button class="remove-btn" data-remove="' + item.key + '">✕</button>' +
+                        '</div>';
+                }).join('');
+
+                var removeBtns = list.querySelectorAll('.remove-btn');
+                for (var i = 0; i < removeBtns.length; i++) {
+                    removeBtns[i].addEventListener('click', function() {
+                        removeFromSelection(this.getAttribute('data-remove'));
+                    });
+                }
+            }
+
+            function exportDictionary() {
+                var selectedCount = Object.keys(state.selected).length;
+                if (selectedCount === 0) {
+                    alert('⚠️ No hay variables seleccionadas para exportar.\n\nPor favor, selecciona al menos una variable antes de exportar.');
+                    return;
+                }
+
+                var selectedVars = [];
+                
+                for (var key in state.selected) {
+                    var parts = key.split('|||');
+                    var dictId = parts[0];
+                    var index = parseInt(parts[1]);
+                    
+                    var dict = state.dictionaries.find(function(d) { return d.id === dictId; });
+                    if (dict && dict.variables[index]) {
+                        var originalVar = dict.variables[index];
+                        var varCopy = {};
+                        for (var prop in originalVar) {
+                            if (prop !== '_categoryId') {
+                                varCopy[prop] = originalVar[prop];
+                            }
+                        }
+                        selectedVars.push(varCopy);
+                    }
+                }
+
+                try {
+                    var csv = Papa.unparse(selectedVars, {
+                        quotes: true,
+                        quoteChar: '"',
+                        escapeChar: '"',
+                        delimiter: ',',
+                        header: true,
+                        newline: '\r\n'
+                    });
+
+                    var BOM = '\uFEFF';
+                    var blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+                    var link = document.createElement('a');
+                    var url = URL.createObjectURL(blob);
+                    
+                    var filename = document.getElementById('exportName').value.trim() || 'diccionario_personalizado';
+                    filename = filename.replace(/[^a-zA-Z0-9_\-]/g, '_');
+                    
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', filename + '.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    setTimeout(function() {
+                        URL.revokeObjectURL(url);
+                    }, 100);
+
+                    alert('✅ Diccionario exportado correctamente!\n\n' + 
+                          '📊 Variables exportadas: ' + selectedVars.length + '\n' +
+                          '📁 Archivo: ' + filename + '.csv\n\n' +
+                          'El archivo está listo para importar en REDCap.');
+                    
+                } catch(error) {
+                    alert('❌ Error al exportar el diccionario:\n\n' + error.message);
+                }
+            }
+
+            function clearFilters() {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('typeFilter').value = 'all';
+                document.getElementById('categoryFilter').value = 'all';
+                document.getElementById('dictFilter').value = 'all';
+                render();
+            }
+
+            function openImportModal() {
+                document.getElementById('importModal').classList.add('show');
+                document.getElementById('uploadStatus').innerHTML = '';
+                document.getElementById('dictName').value = '';
+            }
+
+            function closeImportModal() {
+                document.getElementById('importModal').classList.remove('show');
+            }
+
+            function openCategoryModal() {
+                document.getElementById('categoryModal').classList.add('show');
+                updateParentSelectors();
+                renderCategoryTree();
+            }
+
+            function closeCategoryModal() {
+                document.getElementById('categoryModal').classList.remove('show');
+            }
+
+            function saveToStorage() {
+                try {
+                    localStorage.setItem('redcap_v3_dictionaries', JSON.stringify(state.dictionaries));
+                    localStorage.setItem('redcap_v3_selected', JSON.stringify(state.selected));
+                    localStorage.setItem('redcap_v3_expanded_dicts', JSON.stringify(state.expandedDicts));
+                    localStorage.setItem('redcap_v3_categories', JSON.stringify(state.categories));
+                } catch(e) {
+                    console.log('No se pudo guardar en localStorage', e);
+                }
+            }
+
+            function loadFromStorage() {
+                try {
+                    var savedDicts = localStorage.getItem('redcap_v3_dictionaries');
+                    var savedSelected = localStorage.getItem('redcap_v3_selected');
+                    var savedExpanded = localStorage.getItem('redcap_v3_expanded_dicts');
+                    var savedCategories = localStorage.getItem('redcap_v3_categories');
+                    
+                    if (savedDicts) {
+                        state.dictionaries = JSON.parse(savedDicts);
+                    }
+                    
+                    if (savedSelected) {
+                        state.selected = JSON.parse(savedSelected);
+                    }
+                    
+                    if (savedExpanded) {
+                        state.expandedDicts = JSON.parse(savedExpanded);
+                    }
+                    
+                    if (savedCategories) {
+                        state.categories = JSON.parse(savedCategories);
+                    }
+                } catch(e) {
+                    console.log('No se pudo cargar desde localStorage', e);
+                }
+            }
+
+            loadFromStorage();
+            setupEventListeners();
+            render();
+        })();
+    </script>
+</body>
+</html>
